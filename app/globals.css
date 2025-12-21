@@ -22,5 +22,91 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Jost";
 }
+
+/* ===== Fonts ===== */
+@font-face {
+  font-family: "Jost";
+  src: url("/fonts/Jost/static/Jost-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Jost";
+  src: url("/fonts/Jost/static/Jost-Medium.ttf") format("truetype");
+  font-weight: 500;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Jost";
+  src: url("/fonts/Jost/static/Jost-SemiBold.ttf") format("truetype");
+  font-weight: 600;
+  font-style: normal;
+}
+
+/* ===== Swiper Pagination Panel ===== */
+.hero-swiper .swiper-pagination {
+  right: 0 !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  padding: 10px 6px 10px 10px;
+  background: #f6e0d2;
+  border-radius: 12px 0 0 12px;
+}
+
+/* ===== Swiper Theme (optional, но пусть будет) ===== */
+.hero-swiper {
+  --swiper-theme-color: #f97316;
+  --swiper-pagination-bullet-size: 12px;
+  --swiper-pagination-bullet-inactive-color: #f97316;
+  --swiper-pagination-bullet-inactive-opacity: 0.35;
+  --swiper-pagination-bullet-opacity: 1;
+}
+
+/* ===== Bullets (жестко фиксируем, чтобы не было синего) ===== */
+.hero-swiper .swiper-pagination-bullet {
+  width: 12px !important;
+  height: 12px !important;
+  margin: 0 !important;
+  background: rgba(249, 115, 22, 0.35) !important;
+  opacity: 1 !important;
+}
+
+.hero-swiper .swiper-pagination-bullet-active {
+  background: rgb(249, 115, 22) !important;
+}
+
+/* ===== Slide Text Animation ===== */
+.hero-swiper .slide-text {
+  opacity: 0;
+  transform: translateY(70vh);
+  will-change: transform, opacity;
+  transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.6s ease;
+}
+
+.hero-swiper .swiper-slide-active .slide-text {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 1s; /* было 1s — это слишком медленно */
+}
+
+/* ===== Text Highlight (фон только под строками текста) ===== */
+.hero-swiper .slide-text-highlight {
+  background: #f6e0d2;
+  color: #1f2937;
+
+  padding: 0.18em 0.45em; /* вместо пикселей: адаптируется под размер шрифта */
+  border-radius: 10px;
+
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
