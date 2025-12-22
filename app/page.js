@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+
 import Image from "next/image";
 
 // Swiper
@@ -13,7 +14,10 @@ import "swiper/css/effect-creative";
 export default function Home() {
   const [activeLink, setActiveLink] = useState("home");
   const [isScrolled, setIsScrolled] = useState(false);
+  const [menuVisible, setMenuVisible] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const menuPanelRef = useRef(null);
+  const menuCloseBtnRef = useRef(null);
   const [openCard, setOpenCard] = useState(null);
 
 
@@ -41,6 +45,14 @@ export default function Home() {
     { id: "contacts", label: "Контакты" },
   ];
 
+
+
+function closeMenu() {
+  setMenuVisible(false);
+  setTimeout(() => setMenuOpen(false), 220);
+}
+
+
   useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 10);
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -50,16 +62,90 @@ export default function Home() {
   // ✅ ESC закрывает мобильное меню (возвращаю адекватное поведение)
   useEffect(() => {
     function onKeyDown(e) {
-      if (e.key === "Escape") setMenuOpen(false);
+      if (e.key === "Escape") closeMenu();
     }
     if (menuOpen) window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [menuOpen]);
 
-  function handleNavClick(id) {
-    setActiveLink(id);
-    setMenuOpen(false);
+  useEffect(() => {
+  if (!menuOpen) return;
+
+  // 1) lock scroll
+  const prevOverflow = document.body.style.overflow;
+  document.body.style.overflow = "hidden";
+
+  // 2) focus into panel (на кнопку закрытия)
+  const t = window.setTimeout(() => {
+    menuCloseBtnRef.current?.focus();
+  }, 0);
+
+  return () => {
+    window.clearTimeout(t);
+    document.body.style.overflow = prevOverflow;
+  };
+}, [menuOpen]);
+
+useEffect(() => {
+  if (!menuOpen) return;
+
+  function getFocusable(container) {
+    if (!container) return [];
+    const selectors = [
+      "a[href]",
+      "button:not([disabled])",
+      "input:not([disabled])",
+      "select:not([disabled])",
+      "textarea:not([disabled])",
+      "[tabindex]:not([tabindex='-1'])",
+    ].join(",");
+    return Array.from(container.querySelectorAll(selectors)).filter(
+      (el) => !el.hasAttribute("disabled") && !el.getAttribute("aria-hidden")
+    );
   }
+
+  function onKeyDown(e) {
+    if (e.key !== "Tab") return;
+
+    const panel = menuPanelRef.current;
+    const focusables = getFocusable(panel);
+    if (focusables.length === 0) return;
+
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+
+    // shift+tab на первом -> прыгнуть на последний
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    }
+    // tab на последнем -> прыгнуть на первый
+    else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  }
+
+  window.addEventListener("keydown", onKeyDown);
+  return () => window.removeEventListener("keydown", onKeyDown);
+}, [menuOpen]);
+
+useEffect(() => {
+  if (!menuOpen) setMenuVisible(false);
+}, [menuOpen]);
+
+function openMenu() {
+  setMenuOpen(true);
+  setTimeout(() => setMenuVisible(true), 0);
+}
+
+
+function handleNavClick(id) {
+  setActiveLink(id);
+  closeMenu();
+}
+
+
 
   return (
     <main className="min-h-screen bg-white text-slate-900">
@@ -112,12 +198,12 @@ export default function Home() {
             {/* ✅ MOBILE BURGER (ВОЗВРАЩАЮ) */}
             <button
               type="button"
-              className="md:hidden inline-flex items-center justify-center rounded-lg border border-slate-200 px-3 py-2 text-slate-900 hover:bg-slate-50 transition"
+              className="md:hidden group inline-flex items-center justify-center rounded-lg border border-slate-200 px-3 py-2 text-slate-900 hover:bg-slate-50 transition"
               aria-label="Открыть меню"
               aria-expanded={menuOpen}
-              onClick={() => setMenuOpen(true)}
+              onClick={openMenu}
             >
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" aria-hidden="true"   className="text-orange-500 group-hover:text-orange-600">
                 <path d="M4 7H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                 <path d="M4 12H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                 <path d="M4 17H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -128,61 +214,87 @@ export default function Home() {
       </header>
 
       {/* ✅ MOBILE MENU (ВОЗВРАЩАЮ) */}
-      {menuOpen && (
-        <div className="fixed inset-0 z-50 md:hidden">
+{menuOpen && (
+  <div className="fixed inset-0 z-50 md:hidden">
+    {/* overlay */}
+    <button
+      type="button"
+      className={[
+        "absolute inset-0 bg-black/50 transition-opacity duration-200",
+        menuVisible ? "opacity-100" : "opacity-0",
+      ].join(" ")}
+      aria-label="Закрыть меню"
+      onClick={closeMenu}
+    />
+
+    {/* panel */}
+    <div
+      ref={menuPanelRef}
+      role="dialog"
+      aria-modal="true"
+      tabIndex={-1}
+      className={[
+        "absolute top-0 right-0 h-full bg-white shadow-2xl",
+        "w-[78vw] max-w-[360px]",                 // <<< ВАЖНО: vw, чтобы не было глюков ширины
+        "transition-transform duration-200 ease-out",
+        menuVisible ? "translate-x-0" : "translate-x-full",
+        "z-10",
+      ].join(" ")}
+    >
+      <div className="p-5 flex flex-col h-full">
+        <div className="flex items-center justify-between">
+          <div className="text-orange-500 text-xl font-semibold tracking-wide">Меню</div>
+
           <button
+            ref={menuCloseBtnRef}
             type="button"
-            className="absolute inset-0 bg-black/40"
-            aria-label="Закрыть меню"
-            onClick={() => setMenuOpen(false)}
-          />
-
-          <div className="absolute right-0 top-0 h-full w-[78%] max-w-sm bg-white shadow-xl p-5 flex flex-col">
-            <div className="flex items-center justify-between">
-              <div className="text-slate-900 font-semibold tracking-wide">Меню</div>
-              <button
-                type="button"
-                className="rounded-lg border border-slate-200 px-3 py-2 hover:bg-slate-50 transition"
-                aria-label="Закрыть"
-                onClick={() => setMenuOpen(false)}
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <path d="M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                  <path d="M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                </svg>
-              </button>
-            </div>
-
-            <div className="mt-4 h-px bg-slate-200" />
-
-            <ul className="mt-4 flex flex-col gap-2 text-lg">
-              {navItems.map((item) => {
-                const isActive = activeLink === item.id;
-
-                return (
-                  <li key={item.id}>
-                    <a
-                      href={`#${item.id}`}
-                      onClick={() => handleNavClick(item.id)}
-                      className={
-                        isActive
-                          ? "block rounded-lg px-3 py-2 text-orange-500 bg-orange-50"
-                          : "block rounded-lg px-3 py-2 text-slate-900 hover:bg-slate-50"
-                      }
-                    >
-                      {item.label}
-                    </a>
-                  </li>
-                );
-              })}
-            </ul>
-
-            <div className="mt-auto pt-6 text-sm text-slate-500">
-              Нажми на пункт — меню закроется.
-            </div>
-          </div>
+            className="rounded-lg border border-slate-200 px-3 py-2 text-orange-500 hover:bg-orange-50 hover:text-orange-600 transition"
+            aria-label="Закрыть"
+            onClick={closeMenu}
+          >
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              <path d="M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          </button>
         </div>
-      )}
+
+        <div className="mt-4 h-px bg-slate-200" />
+
+        <ul className="mt-4 flex flex-col gap-2 text-lg">
+          {navItems.map((item) => {
+            const isActive = activeLink === item.id;
+
+            return (
+              <li key={item.id}>
+                <a
+                  href={`#${item.id}`}
+                  onClick={() => {
+                    setActiveLink(item.id);
+                    closeMenu();
+                  }}
+                  className={
+                    isActive
+                      ? "block rounded-lg px-3 py-2 text-orange-500 bg-orange-50"
+                      : "block rounded-lg px-3 py-2 text-slate-900 hover:bg-slate-50"
+                  }
+                >
+                  {item.label}
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+
+        <div className="mt-auto pt-6 text-sm text-slate-500">
+          Нажми на пункт — меню закроется.
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+
+
 
       {/* ===== HERO ===== */}
       <section className="w-full h-[600px] relative" id="home">
@@ -259,9 +371,11 @@ export default function Home() {
           {/* TEXT — НЕ ТРОГАЛ */}
           <div>
             <p className="text-sm text-neutral-500">Обо мне</p>
-            <h2 className="mt-3 text-3xl sm:text-4xl font-semibold">
-              Мой подход — интерьер, адаптированный под человека.
-            </h2>
+<h2 className="mt-3 text-3xl sm:text-4xl font-semibold">
+  Мой подход —{" "}
+  <span className="text-orange-500">интерьер</span>, адаптированный под человека.
+</h2>
+
 
             <div className="mt-6 space-y-4 text-neutral-700">
               <p>
