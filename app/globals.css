@@ -129,3 +129,33 @@ body {
   from { opacity: 0; }
   to   { opacity: 1; }
 }
+
+/* ===== SERVICES: pagination dots ===== */
+.services-swiper .swiper-pagination {
+  position: relative !important;
+  margin-top: 18px !important;
+  bottom: auto !important;
+  left: auto !important;
+
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+
+.services-swiper .swiper-pagination-bullet {
+  width: 10px !important;
+  height: 10px !important;
+  border-radius: 9999px !important;
+
+  background: rgba(249, 115, 22, 0.30) !important; /* мягкий оранж */
+  opacity: 1 !important;
+
+  transform: scale(1) !important;
+  transition: transform 220ms ease, background-color 220ms ease !important;
+}
+
+.services-swiper .swiper-pagination-bullet-active {
+  background: rgb(249, 115, 22) !important; /* яркий оранж */
+  transform: scale(1.15) !important;
+}
