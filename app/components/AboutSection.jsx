@@ -8,8 +8,8 @@ export default function AboutSection() {
   const [openCard, setOpenCard] = useState(null);
 
   return (
-                  <section id="about" className="py-20">
-                    <div className="max-w-6xl mx-auto px-6 grid gap-12 lg:grid-cols-2">
+                  <section id="about">
+                    <div className="max-w-6xl mx-auto px-6 grid gap-12 lg:grid-cols-2 pt-10">
                       {/* FOTO */}
                       <div className="overflow-hidden rounded-3xl min-h-[640px]">
                         <div className="relative h-full w-full">
@@ -59,7 +59,7 @@ export default function AboutSection() {
                         </div>
             
                         {/* ===== КАРТОЧКИ: анимация как раньше, раскрывается ТОЛЬКО наведённая ===== */}
-                        <div className="mt-10 grid gap-2 sm:grid-cols-3 pb-28">
+                        <div className="mt-10 grid gap-2 sm:grid-cols-3 pb-10 sm:pb-28">
             {[
               { title: "Сроки", value: "Концепция 7–10 дней", icon: "/icons/icon-about1.svg" },
               { title: "Формат", value: "Онлайн + выезд на объект", icon: "/icons/icon-about2.svg" },

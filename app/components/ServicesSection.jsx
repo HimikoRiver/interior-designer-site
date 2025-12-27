@@ -2,11 +2,11 @@
 
 import Image from "next/image";
 
-// Swiper
-import { Swiper, SwiperSlide } from "swiper/react";
-import { Autoplay, Pagination } from "swiper/modules";
-import "swiper/css";
-import "swiper/css/pagination";
+// Swiper (больше не нужен) — УДАЛИЛ
+// import { Swiper, SwiperSlide } from "swiper/react";
+// import { Autoplay, Pagination } from "swiper/modules";
+// import "swiper/css";
+// import "swiper/css/pagination";
 
 const services = [
   {
@@ -100,12 +100,15 @@ const services = [
 ];
 
 export default function ServicesSection() {
+  // Берём только 6 первых карточек (2 последние убираем)
+  const visibleServices = services.slice(0, 6);
+
   return (
     <section
       id="services"
-      className="w-full min-h-screen flex items-center bg-gradient-to-b from-white to-neutral-50 overflow-x-hidden"
+      className="w-full min-h-screen flex items-center bg-gradient-to-b from-white to-neutral-50 overflow-x-hidden py-5"
     >
-      <div className="mx-auto w-full max-w-6xl px-6 py-14">
+      <div className="mx-auto w-full max-w-6xl px-6">
         {/* Верх: текст + картинка */}
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:items-center">
           <div className="lg:col-span-6">
@@ -150,71 +153,50 @@ export default function ServicesSection() {
           </div>
         </div>
 
-        {/* Слайдер карточек */}
-        <div className="mt-10">
-          <Swiper
-            modules={[Autoplay, Pagination]}
-            autoplay={{ delay: 5000, disableOnInteraction: false }}
-            pagination={{ clickable: true }}
-            spaceBetween={16}
-            grabCursor
-            watchOverflow={false}
-            slidesPerView={1.08}
-            style={{
-              paddingLeft: "24px",
-              paddingRight: "24px",
-              overflow: "visible",
-            }}
-            breakpoints={{
-              640: { slidesPerView: 1.4 },
-              768: { slidesPerView: 2.1 },
-              1024: { slidesPerView: 2.6 },
-              1280: { slidesPerView: 3.2 },
-            }}
-            className="services-swiper"
-          >
-            {services.map((s) => (
-              <SwiperSlide key={s.title} className="h-auto">
-                <article className="group relative h-[360px] rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md hover:border-neutral-300 flex flex-col">
-                  <div className="absolute left-0 top-6 bottom-6 w-[3px] rounded-full bg-orange-500/80" />
+        {/* Статичная сетка 2 ряда по 3 */}
+        <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {visibleServices.map((s) => (
+            <article
+              key={s.title}
+              className="group relative h-[360px] rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md hover:border-neutral-300 flex flex-col"
+            >
+              <div className="absolute left-0 top-6 bottom-6 w-[3px] rounded-full bg-orange-500/80" />
 
-                  <div className="pl-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <h3 className="text-base sm:text-lg font-semibold text-neutral-900">
-                        {s.title}
-                      </h3>
-                      <span className="inline-flex items-center rounded-full border border-orange-200 bg-orange-50 px-2.5 py-1 text-xs font-semibold text-orange-700">
-                        {s.tag}
-                      </span>
-                    </div>
+              <div className="pl-3">
+                <div className="flex items-start justify-between gap-3">
+                  <h3 className="text-base sm:text-lg font-semibold text-neutral-900">
+                    {s.title}
+                  </h3>
+                  <span className="inline-flex items-center rounded-full border border-orange-200 bg-orange-50 px-2.5 py-1 text-xs font-semibold text-orange-700">
+                    {s.tag}
+                  </span>
+                </div>
 
-                    <p className="mt-2 text-sm leading-relaxed text-neutral-600">{s.forWho}</p>
+                <p className="mt-2 text-sm leading-relaxed text-neutral-600">{s.forWho}</p>
 
-                    <ul className="mt-4 space-y-2">
-                      {s.bullets.map((b) => (
-                        <li key={b} className="flex gap-2">
-                          <span className="mt-2 h-1.5 w-1.5 flex-none rounded-full bg-neutral-300 group-hover:bg-orange-400 transition" />
-                          <p className="text-sm text-neutral-700 leading-relaxed">{b}</p>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+                <ul className="mt-4 space-y-2">
+                  {s.bullets.map((b) => (
+                    <li key={b} className="flex gap-2">
+                      <span className="mt-2 h-1.5 w-1.5 flex-none rounded-full bg-neutral-300 group-hover:bg-orange-400 transition" />
+                      <p className="text-sm text-neutral-700 leading-relaxed">{b}</p>
+                    </li>
+                  ))}
+                </ul>
+              </div>
 
-                  <div className="mt-auto pl-3">
-                    <div className="mt-4 flex items-center justify-between rounded-xl bg-neutral-50 px-4 py-3">
-                      <p className="text-xs font-medium text-neutral-500">Срок</p>
-                      <p className="text-sm font-semibold text-neutral-900">{s.timing}</p>
-                    </div>
-                  </div>
-                </article>
-              </SwiperSlide>
-            ))}
-          </Swiper>
-
-          <p className="mt-8 text-sm text-neutral-500 text-center">
-            Цены и сроки зависят от площади и задачи. После короткого брифа скажу точную вилку и план.
-          </p>
+              <div className="mt-auto pl-3">
+                <div className="mt-4 flex items-center justify-between rounded-xl bg-neutral-50 px-4 py-3">
+                  <p className="text-xs font-medium text-neutral-500">Срок</p>
+                  <p className="text-sm font-semibold text-neutral-900">{s.timing}</p>
+                </div>
+              </div>
+            </article>
+          ))}
         </div>
+
+        <p className="mt-8 text-sm text-neutral-500 text-center">
+          Цены и сроки зависят от площади и задачи. После короткого брифа скажу точную вилку и план.
+        </p>
       </div>
     </section>
   );
