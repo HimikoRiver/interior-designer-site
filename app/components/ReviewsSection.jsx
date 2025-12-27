@@ -84,10 +84,7 @@ function Stars({ rating = 5 }) {
   return (
     <div className="flex items-center gap-1" aria-label={`Оценка: ${rating} из 5`}>
       {Array.from({ length: 5 }).map((_, i) => (
-        <span
-          key={i}
-          className={i < rating ? "text-orange-500" : "text-neutral-300"}
-        >
+        <span key={i} className={i < rating ? "text-orange-500" : "text-neutral-300"}>
           ★
         </span>
       ))}
@@ -98,10 +95,10 @@ function Stars({ rating = 5 }) {
 export default function ReviewsSection() {
   return (
     <section id="reviews" className="bg-neutral-50">
-      <div className="max-w-6xl mx-auto px-6 py-20">
+      <div className="mx-auto max-w-6xl px-6 py-20">
         <div className="flex flex-col gap-3">
-          <h2 className="text-3xl sm:text-4xl font-semibold">Отзывы</h2>
-          <p className="text-neutral-600 max-w-2xl">
+          <h2 className="text-3xl font-semibold sm:text-4xl">Отзывы</h2>
+          <p className="max-w-2xl text-neutral-600">
             Слова клиентов — лучшее подтверждение, что результат оправдал ожидания.
           </p>
         </div>
@@ -112,7 +109,7 @@ export default function ReviewsSection() {
             loop
             centeredSlides
             grabCursor
-            speed={800}
+            speed={900}
             autoplay={{
               delay: 4500,
               disableOnInteraction: false,
@@ -130,29 +127,28 @@ export default function ReviewsSection() {
               <SwiperSlide key={`${r.name}-${idx}`}>
                 {({ isActive }) => (
                   <article
+                    style={{ willChange: "transform" }}
                     className={[
                       "group relative overflow-hidden rounded-2xl bg-white shadow-sm",
                       // фикс высоты у всех карточек
                       "h-[340px] sm:h-[360px]",
-                      // без рывков: не transition-all
-                      "transition-[transform,box-shadow] duration-500 ease-out",
-                      isActive
-                        ? "scale-100 shadow-md"
-                        : "scale-[0.92]",
-                      "hover:shadow-lg",
+                      // GPU + более спокойные переходы
+                      "transform-gpu transition-[transform,box-shadow,opacity] duration-700 ease-out",
+                      // менее резкий прыжок
+                      isActive ? "scale-100 opacity-100 shadow-md" : "scale-[0.95] opacity-90",
                     ].join(" ")}
                   >
-                    {/* рамка (вместо border) — аккуратнее выглядит */}
+                    {/* рамка */}
                     <div
                       className={[
-                        "pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-inset transition duration-300",
+                        "pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-inset transition-colors duration-300",
                         isActive ? "ring-orange-200" : "ring-neutral-200",
                         "group-hover:ring-orange-300",
                       ].join(" ")}
                       aria-hidden="true"
                     />
 
-                    {/* “красота”: насыщенный оранжевый hover/active градиент */}
+                    {/* мягкий подсвет */}
                     <div
                       className={[
                         "pointer-events-none absolute inset-0 transition-opacity duration-300",
@@ -160,56 +156,57 @@ export default function ReviewsSection() {
                       ].join(" ")}
                       aria-hidden="true"
                     >
-                      <div className="absolute -top-24 -right-24 h-64 w-64 rounded-full bg-orange-500/32 blur-3xl" />
-                      <div className="absolute -bottom-28 -left-28 h-80 w-80 rounded-full bg-orange-500/24 blur-3xl" />
-                      <div className="absolute inset-0 bg-gradient-to-br from-orange-500/0 via-orange-500/10 to-orange-500/18" />
+                      <div className="absolute -top-24 -right-24 h-64 w-64 rounded-full bg-orange-500/28 blur-3xl" />
+                      <div className="absolute -bottom-28 -left-28 h-80 w-80 rounded-full bg-orange-500/20 blur-3xl" />
+                      <div className="absolute inset-0 bg-gradient-to-br from-orange-500/0 via-orange-500/10 to-orange-500/16" />
                     </div>
 
-                    <div className="relative p-6 sm:p-7 h-full flex flex-col">
+                    <div className="relative flex h-full flex-col p-6 sm:p-7">
                       <div className="flex items-start justify-between gap-4">
-                        <div className="flex items-start gap-4 min-w-0">
-                          <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full bg-neutral-200 ring-1 ring-neutral-200 group-hover:ring-orange-300 transition">
-                            <Image
-                              src={r.avatar}
-                              alt={r.name}
-                              fill
-                              className="object-cover"
-                              sizes="48px"
-                              priority={idx < 3}
-                            />
-                          </div>
-
-                          {/* без многоточий: роль переносится вниз */}
-                          <div className="min-w-0">
-                            <p className="font-semibold text-neutral-900 leading-tight">
-                              {r.name}
-                            </p>
-
-                            <div className="mt-2 flex items-center gap-3">
-                              <Stars rating={r.rating} />
+                        <div className="min-w-0">
+                          <div className="flex items-start gap-4">
+                            <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full bg-neutral-200 ring-1 ring-neutral-200 transition group-hover:ring-orange-300">
+                              <Image
+                                src={r.avatar}
+                                alt={r.name}
+                                fill
+                                className="object-cover"
+                                sizes="48px"
+                                priority={idx < 3}
+                              />
                             </div>
 
-                            <p className="mt-2 text-sm text-neutral-600 whitespace-normal">
-                              {r.role}
-                            </p>
+                            <div className="min-w-0">
+                              <p className="leading-tight text-neutral-900 font-semibold">
+                                {r.name}
+                              </p>
+
+                              <div className="mt-2 flex items-center gap-3">
+                                <Stars rating={r.rating} />
+                              </div>
+
+                              <p className="mt-2 whitespace-normal text-sm text-neutral-600">
+                                {r.role}
+                              </p>
+                            </div>
                           </div>
                         </div>
 
-                        <div className="text-orange-500 text-3xl leading-none select-none transition-transform duration-300 group-hover:rotate-6">
+                        <div className="select-none text-3xl leading-none text-orange-500">
                           “
                         </div>
                       </div>
 
                       <p
                         className={[
-                          "mt-5 text-neutral-700 leading-relaxed overflow-hidden",
+                          "mt-5 overflow-hidden leading-relaxed text-neutral-700",
                           "[display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:5]",
                         ].join(" ")}
                       >
                         {r.text}
                       </p>
 
-                      <div className="mt-auto pt-6 flex items-center justify-between">
+                      <div className="mt-auto flex items-center justify-between pt-6">
                         <span className="text-xs text-neutral-800">Частный проект</span>
                         <span className="text-xs text-neutral-500">
                           {idx + 1}/{reviews.length}
