@@ -1,9 +1,14 @@
+"use client";
+
+import { useState } from "react";
 import Image from "next/image";
 
 const MAP_SRC =
   "https://yandex.ru/map-widget/v1/?indoorLevel=1&ll=45.694936%2C43.310606&mode=search&ol=geo&ouri=ymapsbm1%3A%2F%2Fgeo%3Fdata%3DCgo0Mzk2Njg2ODUwEnDQoNC-0YHRgdC40Y8sINCn0LXRh9C10L3RgdC60LDRjyDQoNC10YHQv9GD0LHQu9C40LrQsCwg0JPRgNC-0LfQvdGL0LksINGD0LvQuNGG0LAg0JIu0JAuINCa0LDQvS3QmtCw0LvQuNC60LAsIDU1IgoNnsc2QhUQPi1C&z=16.61";
 
 export default function ContactsFooter() {
+  const [mapActive, setMapActive] = useState(false);
+
   return (
     <footer className="w-full">
       {/* MAP */}
@@ -13,13 +18,34 @@ export default function ContactsFooter() {
           <h3 className="text-xl font-semibold text-neutral-900 md:text-2xl">
             Чеченская Республика, г. Грозный, ул. В.А. Кан-Калика, 55
           </h3>
-          <p className="mt-2 text-neutral-600">По предварительной договорённости.</p>
+          <p className="mt-2 text-neutral-600">
+            По предварительной договорённости.
+          </p>
 
-          <div className="mt-4 overflow-hidden rounded-2xl border border-neutral-200">
+          <div
+            className="mt-4 relative overflow-hidden rounded-2xl border border-neutral-200"
+            onMouseLeave={() => setMapActive(false)}
+          >
+            {!mapActive && (
+              <button
+                type="button"
+                className="absolute inset-0 z-10 flex items-center justify-center cursor-pointer"
+                onClick={() => setMapActive(true)}
+                aria-label="Активировать карту"
+              >
+                <div id="contacts" className="bg-white/90 px-4 py-2 rounded-xl text-sm text-slate-700 shadow">
+                  Нажмите, чтобы взаимодействовать с картой
+                </div>
+              </button>
+            )}
+
             <iframe
               src={MAP_SRC}
               title="Яндекс.Карта"
-              className="h-[300px] w-full md:h-[380px]"
+              className={[
+                "h-[300px] w-full md:h-[380px]",
+                mapActive ? "pointer-events-auto" : "pointer-events-none",
+              ].join(" ")}
               loading="lazy"
               frameBorder="0"
               referrerPolicy="no-referrer-when-downgrade"
@@ -29,7 +55,7 @@ export default function ContactsFooter() {
       </section>
 
       {/* FOOTER */}
-      <section id="contacts" className="w-full bg-orange-500 text-black">
+      <section  className="w-full bg-orange-500 text-black">
         <div className="mx-auto max-w-6xl px-4 py-8 md:px-8 md:py-10">
           <div className="grid grid-cols-1 gap-10 md:grid-cols-12 md:gap-8">
             {/* LEFT */}
@@ -79,7 +105,7 @@ export default function ContactsFooter() {
                 </p>
 
                 {/* ICONS */}
-                <div className="mt-6 flex flex-wrap gap-6">
+                <div className="mt-6 flex flex-wrap gap-3 md:gap-6">
                   {["whatsapp", "telegram", "gmail", "vk"].map((icon) => (
                     <a
                       key={icon}

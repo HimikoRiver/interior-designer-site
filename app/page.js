@@ -17,7 +17,6 @@ import "swiper/css";
 import "swiper/css/pagination";
 import "swiper/css/effect-creative";
 
-
 export default function Home() {
   const [activeLink, setActiveLink] = useState("home");
   const [isScrolled, setIsScrolled] = useState(false);
@@ -26,7 +25,10 @@ export default function Home() {
   const menuPanelRef = useRef(null);
   const menuCloseBtnRef = useRef(null);
 
-
+  // ✅ refs для “заморозки” activeLink на время программного скролла
+  const programmaticScrollRef = useRef(false);
+  const targetIdRef = useRef(null);
+  const unlockTimerRef = useRef(null);
 
   // ✅ ВОЗВРАЩАЮ ВСЕ ТЕКСТЫ СЛАЙДЕРА (как было раньше)
   const slides = [
@@ -52,13 +54,10 @@ export default function Home() {
     { id: "contacts", label: "Контакты" },
   ];
 
-
-
-function closeMenu() {
-  setMenuVisible(false);
-  setTimeout(() => setMenuOpen(false), 220);
-}
-
+  function closeMenu() {
+    setMenuVisible(false);
+    setTimeout(() => setMenuOpen(false), 220);
+  }
 
   useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 10);
@@ -76,83 +75,171 @@ function closeMenu() {
   }, [menuOpen]);
 
   useEffect(() => {
-  if (!menuOpen) return;
+    if (!menuOpen) return;
 
-  // 1) lock scroll
-  const prevOverflow = document.body.style.overflow;
-  document.body.style.overflow = "hidden";
+    // 1) lock scroll
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
 
-  // 2) focus into panel (на кнопку закрытия)
-  const t = window.setTimeout(() => {
-    menuCloseBtnRef.current?.focus();
-  }, 0);
+    // 2) focus into panel (на кнопку закрытия)
+    const t = window.setTimeout(() => {
+      menuCloseBtnRef.current?.focus();
+    }, 0);
 
-  return () => {
-    window.clearTimeout(t);
-    document.body.style.overflow = prevOverflow;
-  };
-}, [menuOpen]);
+    return () => {
+      window.clearTimeout(t);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [menuOpen]);
 
-useEffect(() => {
-  if (!menuOpen) return;
+  // ✅ ФОКУС-ТРАП В МЕНЮ (как у тебя было)
+  useEffect(() => {
+    if (!menuOpen) return;
 
-  function getFocusable(container) {
-    if (!container) return [];
-    const selectors = [
-      "a[href]",
-      "button:not([disabled])",
-      "input:not([disabled])",
-      "select:not([disabled])",
-      "textarea:not([disabled])",
-      "[tabindex]:not([tabindex='-1'])",
-    ].join(",");
-    return Array.from(container.querySelectorAll(selectors)).filter(
-      (el) => !el.hasAttribute("disabled") && !el.getAttribute("aria-hidden")
-    );
+    function getFocusable(container) {
+      if (!container) return [];
+      const selectors = [
+        "a[href]",
+        "button:not([disabled])",
+        "input:not([disabled])",
+        "select:not([disabled])",
+        "textarea:not([disabled])",
+        "[tabindex]:not([tabindex='-1'])",
+      ].join(",");
+      return Array.from(container.querySelectorAll(selectors)).filter(
+        (el) => !el.hasAttribute("disabled") && !el.getAttribute("aria-hidden")
+      );
+    }
+
+    function onKeyDown(e) {
+      if (e.key !== "Tab") return;
+
+      const panel = menuPanelRef.current;
+      const focusables = getFocusable(panel);
+      if (focusables.length === 0) return;
+
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+
+      // shift+tab на первом -> прыгнуть на последний
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      }
+      // tab на последнем -> прыгнуть на первый
+      else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [menuOpen]);
+
+  useEffect(() => {
+    if (!menuOpen) setMenuVisible(false);
+  }, [menuOpen]);
+
+  function openMenu() {
+    setMenuOpen(true);
+    setTimeout(() => setMenuVisible(true), 0);
   }
 
-  function onKeyDown(e) {
-    if (e.key !== "Tab") return;
+  // ✅ ЕДИНСТВЕННАЯ handleNavClick (фикс подсветки + smooth scroll + lock)
+  function handleNavClick(id, e) {
+    if (e) e.preventDefault();
 
-    const panel = menuPanelRef.current;
-    const focusables = getFocusable(panel);
-    if (focusables.length === 0) return;
+    // включаем “режим автоскролла к цели”
+    programmaticScrollRef.current = true;
+    targetIdRef.current = id;
 
-    const first = focusables[0];
-    const last = focusables[focusables.length - 1];
+    // мгновенно подсветить цель (чтобы не прыгало)
+    setActiveLink(id);
 
-    // shift+tab на первом -> прыгнуть на последний
-    if (e.shiftKey && document.activeElement === first) {
-      e.preventDefault();
-      last.focus();
-    }
-    // tab на последнем -> прыгнуть на первый
-    else if (!e.shiftKey && document.activeElement === last) {
-      e.preventDefault();
-      first.focus();
-    }
+    // на всякий случай сбросить старый таймер
+    if (unlockTimerRef.current) clearTimeout(unlockTimerRef.current);
+
+    document.getElementById(id)?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+
+    closeMenu();
+
+    // страховка: если браузер не даст “момента цели” — отпускаем через время
+    unlockTimerRef.current = setTimeout(() => {
+      programmaticScrollRef.current = false;
+      targetIdRef.current = null;
+    }, 1400);
   }
 
-  window.addEventListener("keydown", onKeyDown);
-  return () => window.removeEventListener("keydown", onKeyDown);
-}, [menuOpen]);
+  // ✅ СТАБИЛЬНОЕ определение активной секции по scroll (вместо observer)
+  useEffect(() => {
+    const ids = navItems.map((i) => i.id);
+    const headerOffset = 120;
 
-useEffect(() => {
-  if (!menuOpen) setMenuVisible(false);
-}, [menuOpen]);
+    let raf = 0;
 
-function openMenu() {
-  setMenuOpen(true);
-  setTimeout(() => setMenuVisible(true), 0);
-}
+    const detectActive = () => {
+      const sections = ids
+        .map((id) => document.getElementById(id))
+        .filter(Boolean);
 
+      if (sections.length === 0) return;
 
-function handleNavClick(id) {
-  setActiveLink(id);
-  closeMenu();
-}
+      const line = headerOffset + 1;
 
+      let current = null;
 
+      // 1) Ищем секцию, которая “держит” линию под хедером
+      for (const sec of sections) {
+        const rect = sec.getBoundingClientRect();
+        if (rect.top <= line && rect.bottom > line) {
+          current = sec.id;
+          break;
+        }
+      }
+
+      // 2) Если между секциями — берём ближайшую секцию сверху
+      if (!current) {
+        let bestTop = -Infinity;
+        for (const sec of sections) {
+          const top = sec.getBoundingClientRect().top;
+          if (top <= line && top > bestTop) {
+            bestTop = top;
+            current = sec.id;
+          }
+        }
+      }
+
+      if (!current) current = "home";
+
+      // lock во время программного скролла: не даём “пробегать”
+      if (programmaticScrollRef.current) {
+        if (current !== targetIdRef.current) return;
+
+        programmaticScrollRef.current = false;
+        targetIdRef.current = null;
+        if (unlockTimerRef.current) clearTimeout(unlockTimerRef.current);
+      }
+
+      setActiveLink(current);
+    };
+
+    const onScroll = () => {
+      if (raf) cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(detectActive);
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    detectActive();
+
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, []);
 
   return (
     <main className="min-h-screen bg-white text-slate-900">
@@ -179,7 +266,7 @@ function handleNavClick(id) {
                 <li key={item.id}>
                   <a
                     href={`#${item.id}`}
-                    onClick={() => setActiveLink(item.id)}
+                    onClick={(e) => handleNavClick(item.id, e)}
                     className={
                       activeLink === item.id
                         ? [
@@ -210,7 +297,14 @@ function handleNavClick(id) {
               aria-expanded={menuOpen}
               onClick={openMenu}
             >
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" aria-hidden="true"   className="text-orange-500 group-hover:text-orange-600">
+              <svg
+                width="32"
+                height="32"
+                viewBox="0 0 24 24"
+                fill="none"
+                aria-hidden="true"
+                className="text-orange-500 group-hover:text-orange-600"
+              >
                 <path d="M4 7H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                 <path d="M4 12H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                 <path d="M4 17H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -221,87 +315,90 @@ function handleNavClick(id) {
       </header>
 
       {/* ✅ MOBILE MENU (ВОЗВРАЩАЮ) */}
-{menuOpen && (
-  <div className="fixed inset-0 z-50 md:hidden">
-    {/* overlay */}
-    <button
-      type="button"
-      className={[
-        "absolute inset-0 bg-black/50 transition-opacity duration-200",
-        menuVisible ? "opacity-100" : "opacity-0",
-      ].join(" ")}
-      aria-label="Закрыть меню"
-      onClick={closeMenu}
-    />
-
-    {/* panel */}
-    <div
-      ref={menuPanelRef}
-      role="dialog"
-      aria-modal="true"
-      tabIndex={-1}
-      className={[
-        "absolute top-0 right-0 h-full bg-white shadow-2xl",
-        "w-[78vw] max-w-[360px]",                 // <<< ВАЖНО: vw, чтобы не было глюков ширины
-        "transition-transform duration-200 ease-out",
-        menuVisible ? "translate-x-0" : "translate-x-full",
-        "z-10",
-      ].join(" ")}
-    >
-      <div className="p-5 flex flex-col h-full">
-        <div className="flex items-center justify-between">
-          <div className="text-orange-500 text-xl font-semibold tracking-wide">Меню</div>
-
+      {menuOpen && (
+        <div className="fixed inset-0 z-50 md:hidden">
+          {/* overlay */}
           <button
-            ref={menuCloseBtnRef}
             type="button"
-            className="rounded-lg border border-slate-200 px-3 py-2 text-orange-500 hover:bg-orange-50 hover:text-orange-600 transition"
-            aria-label="Закрыть"
+            className={[
+              "absolute inset-0 bg-black/50 transition-opacity duration-200",
+              menuVisible ? "opacity-100" : "opacity-0",
+            ].join(" ")}
+            aria-label="Закрыть меню"
             onClick={closeMenu}
+          />
+
+          {/* panel */}
+          <div
+            ref={menuPanelRef}
+            role="dialog"
+            aria-modal="true"
+            tabIndex={-1}
+            className={[
+              "absolute top-0 right-0 h-full bg-white shadow-2xl",
+              "w-[78vw] max-w-[360px]", // <<< ВАЖНО: vw, чтобы не было глюков ширины
+              "transition-transform duration-200 ease-out",
+              menuVisible ? "translate-x-0" : "translate-x-full",
+              "z-10",
+            ].join(" ")}
           >
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-              <path d="M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            </svg>
-          </button>
-        </div>
+            <div className="p-5 flex flex-col h-full">
+              <div className="flex items-center justify-between">
+                <div className="text-orange-500 text-xl font-semibold tracking-wide">Меню</div>
 
-        <div className="mt-4 h-px bg-slate-200" />
-
-        <ul className="mt-4 flex flex-col gap-2 text-lg">
-          {navItems.map((item) => {
-            const isActive = activeLink === item.id;
-
-            return (
-              <li key={item.id}>
-                <a
-                  href={`#${item.id}`}
-                  onClick={() => {
-                    setActiveLink(item.id);
-                    closeMenu();
-                  }}
-                  className={
-                    isActive
-                      ? "block rounded-lg px-3 py-2 text-orange-500 bg-orange-50"
-                      : "block rounded-lg px-3 py-2 text-slate-900 hover:bg-slate-50"
-                  }
+                <button
+                  ref={menuCloseBtnRef}
+                  type="button"
+                  className="rounded-lg border border-slate-200 px-3 py-2 text-orange-500 hover:bg-orange-50 hover:text-orange-600 transition"
+                  aria-label="Закрыть"
+                  onClick={closeMenu}
                 >
-                  {item.label}
-                </a>
-              </li>
-            );
-          })}
-        </ul>
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path
+                      d="M6 6L18 18"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+                    <path
+                      d="M18 6L6 18"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                </button>
+              </div>
 
-        <div className="mt-auto pt-6 text-sm text-slate-500">
-          Нажми на пункт — меню закроется.
+              <div className="mt-4 h-px bg-slate-200" />
+
+              <ul className="mt-4 flex flex-col gap-2 text-lg">
+                {navItems.map((item) => {
+                  const isActive = activeLink === item.id;
+
+                  return (
+                    <li key={item.id}>
+                      <a
+                        href={`#${item.id}`}
+                        onClick={(e) => handleNavClick(item.id, e)}
+                        className={
+                          isActive
+                            ? "block rounded-lg px-3 py-2 text-orange-500 bg-orange-50"
+                            : "block rounded-lg px-3 py-2 text-slate-900 hover:bg-slate-50"
+                        }
+                      >
+                        {item.label}
+                      </a>
+                    </li>
+                  );
+                })}
+              </ul>
+
+              <div className="mt-auto pt-6 text-sm text-slate-500">Нажми на пункт — меню закроется.</div>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
-  </div>
-)}
-
-
+      )}
 
       {/* ===== HERO ===== */}
       <section className="w-full h-[600px] relative" id="home">
@@ -360,19 +457,19 @@ function handleNavClick(id) {
       </section>
 
       {/* ===== ABOUT ===== */}
-          <AboutSection />
+      <AboutSection />
 
-{/* ===== SERVICES ===== */}
-<ServicesSection />
+      {/* ===== SERVICES ===== */}
+      <ServicesSection />
 
-{/* ===== WORKS ===== */}
-<WorksSection />
+      {/* ===== WORKS ===== */}
+      <WorksSection />
 
-{/* ===== REVIEWS ===== */}
-<ReviewsSection />
+      {/* ===== REVIEWS ===== */}
+      <ReviewsSection />
 
-{/* ===== CONTACTS ===== */}
-<ContactsSection />
+      {/* ===== CONTACTS ===== */}
+      <ContactsSection />
 
     </main>
   );
