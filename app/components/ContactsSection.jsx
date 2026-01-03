@@ -55,7 +55,7 @@ export default function ContactsFooter() {
       </section>
 
       {/* FOOTER */}
-      <section  className="w-full bg-orange-500 text-black">
+      <section  className="w-full bg-orange-400 text-black">
         <div className="mx-auto max-w-6xl px-4 py-8 md:px-8 md:py-10">
           <div className="grid grid-cols-1 gap-10 md:grid-cols-12 md:gap-8">
             {/* LEFT */}

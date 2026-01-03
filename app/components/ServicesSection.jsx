@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Image from "next/image";
 
 // Swiper (больше не нужен) — УДАЛИЛ
@@ -103,6 +104,27 @@ export default function ServicesSection() {
   // Берём только 6 первых карточек (2 последние убираем)
   const visibleServices = services.slice(0, 6);
 
+  // модалка диплома
+  const [diplomaOpen, setDiplomaOpen] = useState(false);
+
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") setDiplomaOpen(false);
+    };
+
+    if (diplomaOpen) {
+      document.addEventListener("keydown", onKeyDown);
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = "";
+    };
+  }, [diplomaOpen]);
+
   return (
     <section
       id="services"
@@ -121,20 +143,52 @@ export default function ServicesSection() {
               Можно начать с консультации или сразу сделать полный проект — подберём формат под вашу задачу.
             </p>
 
+            {/* КНОПКИ */}
             <div className="mt-6 flex flex-col sm:flex-row gap-3">
               <a
                 href="#contacts"
-                className="inline-flex items-center justify-center rounded-xl bg-orange-500 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+                className="
+                  inline-flex items-center justify-center
+                  rounded-xl
+                  bg-orange-500 px-5 py-3
+                  text-sm font-semibold text-white
+                  shadow-sm
+                  transition-all duration-300 ease-out
+                  hover:bg-orange-600
+                  hover:-translate-y-0.5
+                  hover:shadow-md
+                  active:translate-y-0
+                  active:shadow-sm
+                  focus:outline-none
+                  focus:ring-2 focus:ring-orange-500 focus:ring-offset-2
+                "
               >
                 Запросить стоимость
               </a>
 
-              <a
-                href="#contacts"
-                className="inline-flex items-center justify-center rounded-xl border border-neutral-200 bg-white px-5 py-3 text-sm font-semibold text-neutral-900 shadow-sm transition hover:border-neutral-300 hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+              <button
+                type="button"
+                onClick={() => setDiplomaOpen(true)}
+                className="
+                  inline-flex items-center justify-center
+                  rounded-xl
+                  border border-neutral-200 bg-white
+                  px-5 py-3
+                  text-sm font-semibold text-neutral-900
+                  shadow-sm
+                  transition-all duration-300 ease-out
+                  hover:-translate-y-0.5
+                  hover:shadow-md
+                  hover:border-neutral-300
+                  hover:bg-neutral-50
+                  active:translate-y-0
+                  active:shadow-sm
+                  focus:outline-none
+                  focus:ring-2 focus:ring-orange-500 focus:ring-offset-2
+                "
               >
-                Скачать чек-лист
-              </a>
+                Посмотреть диплом
+              </button>
             </div>
           </div>
 
@@ -153,7 +207,7 @@ export default function ServicesSection() {
           </div>
         </div>
 
-        {/* Статичная сетка 2 ряда по 3 */}
+        {/* Статичная сетка */}
         <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {visibleServices.map((s) => (
             <article
@@ -198,6 +252,34 @@ export default function ServicesSection() {
           Цены и сроки зависят от площади и задачи. После короткого брифа скажу точную вилку и план.
         </p>
       </div>
+
+      {/* МОДАЛКА ДИПЛОМА */}
+      {diplomaOpen && (
+        <div
+          className="fixed inset-0 z-[999] bg-black/60 flex items-center justify-center p-4"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) setDiplomaOpen(false);
+          }}
+        >
+          <div className="relative w-[80vw] h-[80vh] bg-white rounded-2xl overflow-hidden shadow-2xl">
+            <button
+              type="button"
+              onClick={() => setDiplomaOpen(false)}
+              className="absolute top-3 right-3 z-10 h-10 w-10 flex items-center justify-center rounded-xl bg-white border border-neutral-200 hover:bg-neutral-100"
+            >
+              ✕
+            </button>
+
+            <Image
+              src="/images/d.webp"
+              alt="Диплом"
+              fill
+              className="object-contain bg-white"
+              priority
+            />
+          </div>
+        </div>
+      )}
     </section>
   );
 }
